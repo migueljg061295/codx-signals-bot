@@ -1,94 +1,69 @@
 import os
 import pg8000
 import telebot
-import time
 
-# ==================== VARIABLES DE ENTORNO ====================
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = int(os.getenv("DB_PORT", 5432))
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_NAME = os.getenv("DB_NAME")
+# Cargar variables de entorno
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_IDS = os.getenv("ADMIN_IDS")  # Puedes poner IDs separados por coma si hay varios
+CHANNEL_VIP = os.getenv("CHANNEL_VIP")
+CHANNEL_FREE = os.getenv("CHANNEL_FREE")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
 
-# ==================== DEBUG ====================
-print("DB_USER =", DB_USER)
-print("DB_HOST =", DB_HOST)
-print("DB_NAME =", DB_NAME)
-print("BOT_TOKEN =", "OK" if BOT_TOKEN else "NO TOKEN")
+DB_HOST = os.getenv("DB_HOST")
+DB_PORT = int(os.getenv("DB_PORT"))
+DB_USER = os.getenv("DB_USER")
+DB_PASS = os.getenv("DB_PASS")
+DB_NAME = os.getenv("DB_NAME")
 
-# ==================== CONEXIÓN A POSTGRES ====================
+# Inicializar bot
+bot = telebot.TeleBot(BOT_TOKEN)
+
+# Conexión a PostgreSQL
 def get_connection():
-    try:
-        conn = pg8000.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            database=DB_NAME,
-            ssl_context=True
-        )
-        return conn
-    except Exception as e:
-        print("Error conectando a DB:", e)
-        return None
+    return pg8000.connect(
+        user=DB_USER,
+        password=DB_PASS,
+        host=DB_HOST,
+        port=DB_PORT,
+        database=DB_NAME,
+        ssl_context=True
+    )
 
+# Inicializar DB (tabla de suscriptores VIP)
 def init_db():
     conn = get_connection()
-    if conn is None:
-        raise Exception("No se pudo conectar a la base de datos")
     cursor = conn.cursor()
-    # Tabla de suscriptores
     cursor.execute("""
-    CREATE TABLE IF NOT EXISTS subscribers (
+    CREATE TABLE IF NOT EXISTS vip_users (
         id SERIAL PRIMARY KEY,
-        telegram_id BIGINT UNIQUE NOT NULL,
-        vip BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT NOW()
-    )
+        telegram_id BIGINT UNIQUE,
+        approved BOOLEAN DEFAULT FALSE
+    );
     """)
     conn.commit()
     cursor.close()
     conn.close()
-    print("Base de datos inicializada")
 
-# ==================== BOT TELEGRAM ====================
-bot = telebot.TeleBot(BOT_TOKEN)
+init_db()
 
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-    bot.reply_to(message, "Bienvenido a Cod-X Signals!\nPara acceder al canal VIP, haz tu suscripción y confirma con /subscribe.")
+# Comandos básicos
+@bot.message_handler(commands=["start"])
+def start(message):
+    bot.send_message(message.chat.id,
+                     f"Bienvenido {message.from_user.first_name}!\n\n"
+                     f"Para acceder al canal VIP, envía tu comprobante de pago y espera la aprobación del admin.")
 
-@bot.message_handler(commands=['subscribe'])
-def subscribe_user(message):
-    telegram_id = message.from_user.id
-    conn = get_connection()
-    if conn:
-        cursor = conn.cursor()
-        # Inserta o actualiza suscriptor
-        cursor.execute("""
-        INSERT INTO subscribers (telegram_id, vip)
-        VALUES (%s, TRUE)
-        ON CONFLICT (telegram_id) DO UPDATE SET vip = TRUE
-        """, (telegram_id,))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        bot.reply_to(message, "¡Suscripción VIP confirmada! ✅")
-    else:
-        bot.reply_to(message, "No se pudo procesar tu suscripción, intenta más tarde.")
+@bot.message_handler(commands=["vip"])
+def vip_command(message):
+    bot.send_message(message.chat.id,
+                     "Envía tu comprobante de pago y el admin verificará tu acceso.")
 
-# ==================== FUNCIÓN PRINCIPAL ====================
-def main():
-    init_db()
-    print("Bot iniciado")
-    while True:
-        try:
-            bot.polling(none_stop=True)
-        except Exception as e:
-            print("Error en polling:", e)
-            time.sleep(5)
+@bot.message_handler(func=lambda message: True)
+def handle_messages(message):
+    # Aquí podrías guardar el mensaje como comprobante
+    if message.chat.id != ADMIN_ID:
+        bot.send_message(ADMIN_ID, f"Nuevo comprobante de {message.from_user.first_name}: {message.text}")
+        bot.send_message(message.chat.id, "Comprobante recibido. Espera la aprobación del admin.")
 
-if __name__ == "__main__":
-    main()
+# Ejecutar bot
+PORT = int(os.environ.get("PORT", 5000))
+bot.infinity_polling()
