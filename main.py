@@ -1,3 +1,5 @@
+print("DB_USER =", DB_USER)
+print("DB_PASSWORD =", DB_PASSWORD)
 
 import os
 import telebot
