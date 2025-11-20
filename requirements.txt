@@ -1,1 +1,2 @@
-pip install Flask python-dotenv pyTelegramBotAPI
+Flask==2.3.3
+python-telegram-bot==20.5
