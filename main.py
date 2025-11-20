@@ -1,7 +1,8 @@
+
+import os
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import pg8000
-import os
 
 # ===========================
 # VARIABLES DE ENTORNO
@@ -17,7 +18,7 @@ ADMIN_IDS = os.getenv("ADMIN_IDS", "").split(",")
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # ===========================
-# CONEXIÓN A NEON DB (pg8000)
+# CONEXIÓN A POSTGRESQL (pg8000)
 # ===========================
 
 def get_connection():
@@ -49,7 +50,6 @@ init_db()
 # ===========================
 # COMANDO /start
 # ===========================
-
 @bot.message_handler(commands=["start"])
 def start(message):
     user_id = message.from_user.id
@@ -72,22 +72,18 @@ def start(message):
 # ===========================
 # HANDLERS DE BOTONES
 # ===========================
-
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     user_id = call.from_user.id
 
     if call.data == "free":
-        bot.send_message(user_id,
-                         "📨 Canal FREE:\nhttps://t.me/codx_signals_free")
-
+        bot.send_message(user_id, "📨 Canal FREE:\nhttps://t.me/codx_signals_free")
     elif call.data == "vip":
         send_vip_instructions(user_id)
 
 # ===========================
 # INSTRUCCIONES VIP
 # ===========================
-
 def send_vip_instructions(user_id):
     markup = InlineKeyboardMarkup()
     pay_btn = InlineKeyboardButton("💸 Enviar comprobante", callback_data="send_proof")
@@ -112,7 +108,6 @@ def ask_payment_proof(call):
 # ===========================
 # ADMIN PANEL
 # ===========================
-
 @bot.message_handler(commands=["admin"])
 def admin_panel(message):
     user_id = str(message.from_user.id)
@@ -134,8 +129,7 @@ def admin_panel(message):
                      reply_markup=markup)
 
 # ===========================
-# BOT RUN
+# INICIO DEL BOT
 # ===========================
-
 print("🚀 BOT INICIADO (Render / Python 3.13 / pg8000)")
 bot.infinity_polling(skip_pending=True)
