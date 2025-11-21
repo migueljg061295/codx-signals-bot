@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import os
 from telegram import Bot
 
@@ -8,7 +8,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_FREE = os.getenv("CHANNEL_FREE")
 CHANNEL_VIP = os.getenv("CHANNEL_VIP")
 
-bot = Bot(token=BOT_TOKEN)
+bot = Bot(token=os.getenv("BOT_TOKEN"))
 
 
 # ---------------------------------------
