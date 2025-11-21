@@ -58,28 +58,27 @@ def send_close(channel, data):
 #   ROUTES MATCHING YOUR TRADINGVIEW ALERT CONFIGURATION
 # ---------------------------------------------------------
 
-# FREE ENTRY
 @app.route("/webhook/free/entry", methods=["POST"])
 def free_entry():
     data = request.json
     send_open(CHANNEL_FREE, data)
     return {"status": "ok"}, 200
 
-# FREE CLOSE
+
 @app.route("/webhook/free/close", methods=["POST"])
 def free_close():
     data = request.json
     send_close(CHANNEL_FREE, data)
     return {"status": "ok"}, 200
 
-# VIP ENTRY
+
 @app.route("/webhook/vip/entry", methods=["POST"])
 def vip_entry():
     data = request.json
     send_open(CHANNEL_VIP, data)
     return {"status": "ok"}, 200
 
-# VIP CLOSE
+
 @app.route("/webhook/vip/close", methods=["POST"])
 def vip_close():
     data = request.json
